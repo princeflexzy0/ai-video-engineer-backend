@@ -1,4 +1,3 @@
-cat > app/main.py << 'EOF'
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -19,10 +18,8 @@ def generate_video():
     template = data.get('template')
     user_id = data.get('userId')
     
-    # Mock response for now
     video_id = 'mock-123'
     
-    # Emit socket event (if connected)
     try:
         socketio.emit('video_status', {
             'id': video_id,
@@ -46,4 +43,3 @@ def handle_connect():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     socketio.run(app, host='0.0.0.0', port=port, debug=True)
-EOF
