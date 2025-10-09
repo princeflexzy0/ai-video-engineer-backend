@@ -54,7 +54,7 @@ def process_video(video_id, script, template, user_id):
             'message': 'Polishing script with AI...',
             'progress': 10,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         polished_script = polish_script(script)
         
@@ -64,7 +64,7 @@ def process_video(video_id, script, template, user_id):
             'message': 'Generating voiceover...',
             'progress': 30,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         audio_file = generate_voiceover(polished_script, f"temp_{video_id}_audio.mp3")
         
@@ -74,7 +74,7 @@ def process_video(video_id, script, template, user_id):
             'message': 'Creating AI presenter video...',
             'progress': 50,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         presenter_video_url = create_heygen_video(polished_script, template)
         
@@ -89,7 +89,7 @@ def process_video(video_id, script, template, user_id):
             'message': 'Composing final video...',
             'progress': 70,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         final_video_path = compose_video(presenter_video_path, audio_file, f"final_{video_id}.mp4")
         
@@ -99,7 +99,7 @@ def process_video(video_id, script, template, user_id):
             'message': 'Uploading to cloud storage...',
             'progress': 85,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         video_url = upload_to_wasabi(final_video_path, f"videos/{video_id}.mp4")
         
@@ -109,7 +109,7 @@ def process_video(video_id, script, template, user_id):
             'message': 'Finalizing...',
             'progress': 95,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         save_to_bubble({
             'id': video_id,
@@ -130,7 +130,7 @@ def process_video(video_id, script, template, user_id):
             'progress': 100,
             'videoUrl': video_url,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         active_jobs[video_id] = {
             'status': 'completed',
@@ -148,7 +148,7 @@ def process_video(video_id, script, template, user_id):
             'message': f'Error: {error_message}',
             'progress': 0,
             'userId': user_id
-        }, broadcast=True)
+        })
         
         active_jobs[video_id] = {
             'status': 'failed',
