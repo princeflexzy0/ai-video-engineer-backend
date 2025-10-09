@@ -1,5 +1,3 @@
-# In backend Codespace - create correct main.py file
-cat > app/main.py << 'EOF'
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -55,4 +53,3 @@ def handle_disconnect():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     socketio.run(app, host='0.0.0.0', port=port, debug=False)
-EOF
