@@ -1,5 +1,6 @@
-python3 << 'SCRIPT'
-content = '''from flask import Flask, request, jsonify
+# In backend Codespace - create correct main.py file
+cat > app/main.py << 'EOF'
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 import os
@@ -26,7 +27,6 @@ def generate_video():
         
         video_id = 'mock-123'
         
-        # Emit socket event
         socketio.emit('video_status', {
             'id': video_id,
             'message': 'Video generation started',
@@ -55,9 +55,4 @@ def handle_disconnect():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     socketio.run(app, host='0.0.0.0', port=port, debug=False)
-'''
-
-with open('app/main.py', 'w') as f:
-    f.write(content)
-print("✅ main.py updated with route fixes")
-SCRIPT
+EOF
