@@ -1,16 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO
 import os
 from datetime import datetime
 import logging
+import threading
+import time
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 active_jobs = {}
 MOCK_MODE = os.getenv('MOCK_MODE', 'True') == 'True'
@@ -38,7 +38,7 @@ def generate_video():
         job_data = {"id": video_id, "status": "queued", "script": script, "template": template, "user_id": user_id, "progress": 0, "current_step": "Queued", "created_at": datetime.now().isoformat(), "video_url": None}
         active_jobs[video_id] = job_data
         logger.info(f"Video generation started: {video_id}")
-        socketio.start_background_task(simulate_video_generation, video_id)
+        threading.Thread(target=simulate_video_generation, args=(video_id,), daemon=True).start()
         return jsonify({"id": video_id, "message": "Video generation started (MOCK MODE)" if MOCK_MODE else "Video generation started", "status": "queued"}), 201
     except Exception as e:
         logger.error(f"Error in generate_video: {str(e)}", exc_info=True)
@@ -60,31 +60,20 @@ def get_jobs():
     return jsonify({"total": len(active_jobs), "jobs": list(active_jobs.values())}), 200
 
 def simulate_video_generation(video_id):
-    import time
     steps = [(0, "processing", "Starting..."), (10, "processing", "Polishing script..."), (25, "processing", "Generating voiceover..."), (45, "processing", "Creating avatar video..."), (65, "processing", "Composing final video..."), (85, "processing", "Uploading to storage..."), (100, "completed", "Video ready!")]
     try:
         for progress, status, step in steps:
             time.sleep(2)
             active_jobs[video_id].update({'status': status, 'progress': progress, 'current_step': step})
-            socketio.emit('video_progress', {'id': video_id, 'progress': progress, 'current_step': step, 'status': status})
             logger.info(f"Video {video_id}: {progress}% - {step}")
         mock_video_url = f"https://mock-wasabi.com/ai-videos/{video_id}.mp4"
         active_jobs[video_id].update({'status': 'completed', 'progress': 100, 'video_url': mock_video_url, 'completed_at': datetime.now().isoformat()})
-        socketio.emit('video_progress', {'id': video_id, 'progress': 100, 'status': 'completed', 'video_url': mock_video_url})
         logger.info(f"Video {video_id} completed")
     except Exception as e:
         logger.error(f"Error: {e}")
         active_jobs[video_id].update({'status': 'failed', 'error': str(e)})
 
-@socketio.on('connect')
-def handle_connect():
-    logger.info('Client connected')
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    logger.info('Client disconnected')
-
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     logger.info(f"Starting server on port {port} (MOCK_MODE={MOCK_MODE})")
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
