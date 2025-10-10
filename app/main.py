@@ -5,47 +5,23 @@ import os
 from datetime import datetime
 import logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# In-memory job storage
 active_jobs = {}
-
-# Get MOCK_MODE from environment
 MOCK_MODE = os.getenv('MOCK_MODE', 'True') == 'True'
 
 @app.route('/')
 def home():
-    return jsonify({
-        "service": "AI Video Engineer Backend",
-        "version": "1.0.0",
-        "status": "running",
-        "mock_mode": MOCK_MODE,
-        "endpoints": {
-            "GET /": "API documentation",
-            "GET /health": "Health check",
-            "POST /generate-video": "Generate video from script",
-            "GET /video-status/<id>": "Get video status",
-            "GET /jobs": "List all jobs"
-        }
-    }), 200
+    return jsonify({"service": "AI Video Engineer Backend", "version": "1.0.0", "status": "running", "mock_mode": MOCK_MODE, "endpoints": {"GET /": "API documentation", "GET /health": "Health check", "POST /generate-video": "Generate video from script", "GET /video-status/<id>": "Get video status", "GET /jobs": "List all jobs"}}), 200
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "active_jobs": len(active_jobs),
-        "mock_mode": MOCK_MODE
-    }), 200
+    return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat(), "active_jobs": len(active_jobs), "mock_mode": MOCK_MODE}), 200
 
 @app.route('/generate-video', methods=['POST'])
 def generate_video():
@@ -53,39 +29,17 @@ def generate_video():
         data = request.get_json()
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
-        
         script = data.get('script')
         template = data.get('template', 'presenter1')
         user_id = data.get('userId', 'guest')
-        
         if not script:
             return jsonify({"error": "Script is required"}), 400
-        
         video_id = f"video_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
-        
-        job_data = {
-            "id": video_id,
-            "status": "queued",
-            "script": script,
-            "template": template,
-            "user_id": user_id,
-            "progress": 0,
-            "current_step": "Queued",
-            "created_at": datetime.now().isoformat(),
-            "video_url": None
-        }
-        
+        job_data = {"id": video_id, "status": "queued", "script": script, "template": template, "user_id": user_id, "progress": 0, "current_step": "Queued", "created_at": datetime.now().isoformat(), "video_url": None}
         active_jobs[video_id] = job_data
         logger.info(f"Video generation started: {video_id}")
-        
         socketio.start_background_task(simulate_video_generation, video_id)
-        
-        return jsonify({
-            "id": video_id,
-            "message": "Video generation started (MOCK MODE)" if MOCK_MODE else "Video generation started",
-            "status": "queued"
-        }), 201
-        
+        return jsonify({"id": video_id, "message": "Video generation started (MOCK MODE)" if MOCK_MODE else "Video generation started", "status": "queued"}), 201
     except Exception as e:
         logger.error(f"Error in generate_video: {str(e)}", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
@@ -107,45 +61,16 @@ def get_jobs():
 
 def simulate_video_generation(video_id):
     import time
-    steps = [
-        (0, "processing", "Starting..."),
-        (10, "processing", "Polishing script..."),
-        (25, "processing", "Generating voiceover..."),
-        (45, "processing", "Creating avatar video..."),
-        (65, "processing", "Composing final video..."),
-        (85, "processing", "Uploading to storage..."),
-        (100, "completed", "Video ready!")
-    ]
-    
+    steps = [(0, "processing", "Starting..."), (10, "processing", "Polishing script..."), (25, "processing", "Generating voiceover..."), (45, "processing", "Creating avatar video..."), (65, "processing", "Composing final video..."), (85, "processing", "Uploading to storage..."), (100, "completed", "Video ready!")]
     try:
         for progress, status, step in steps:
             time.sleep(2)
-            active_jobs[video_id].update({
-                'status': status,
-                'progress': progress,
-                'current_step': step
-            })
-            socketio.emit('video_progress', {
-                'id': video_id,
-                'progress': progress,
-                'current_step': step,
-                'status': status
-            })
+            active_jobs[video_id].update({'status': status, 'progress': progress, 'current_step': step})
+            socketio.emit('video_progress', {'id': video_id, 'progress': progress, 'current_step': step, 'status': status})
             logger.info(f"Video {video_id}: {progress}% - {step}")
-        
         mock_video_url = f"https://mock-wasabi.com/ai-videos/{video_id}.mp4"
-        active_jobs[video_id].update({
-            'status': 'completed',
-            'progress': 100,
-            'video_url': mock_video_url,
-            'completed_at': datetime.now().isoformat()
-        })
-        socketio.emit('video_progress', {
-            'id': video_id,
-            'progress': 100,
-            'status': 'completed',
-            'video_url': mock_video_url
-        })
+        active_jobs[video_id].update({'status': 'completed', 'progress': 100, 'video_url': mock_video_url, 'completed_at': datetime.now().isoformat()})
+        socketio.emit('video_progress', {'id': video_id, 'progress': 100, 'status': 'completed', 'video_url': mock_video_url})
         logger.info(f"Video {video_id} completed")
     except Exception as e:
         logger.error(f"Error: {e}")
