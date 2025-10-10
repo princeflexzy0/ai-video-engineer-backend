@@ -66,9 +66,16 @@ def simulate_video_generation(video_id):
             time.sleep(2)
             active_jobs[video_id].update({'status': status, 'progress': progress, 'current_step': step})
             logger.info(f"Video {video_id}: {progress}% - {step}")
+        
         mock_video_url = f"https://mock-wasabi.com/ai-videos/{video_id}.mp4"
-        active_jobs[video_id].update({'status': 'completed', 'progress': 100, 'video_url': mock_video_url, 'completed_at': datetime.now().isoformat()})
-        logger.info(f"Video {video_id} completed")
+        active_jobs[video_id].update({
+            'status': 'completed',
+            'progress': 100,
+            'current_step': 'Video ready!',
+            'video_url': mock_video_url,
+            'completed_at': datetime.now().isoformat()
+        })
+        logger.info(f"Video {video_id} completed with URL: {mock_video_url}")
     except Exception as e:
         logger.error(f"Error: {e}")
         active_jobs[video_id].update({'status': 'failed', 'error': str(e)})
